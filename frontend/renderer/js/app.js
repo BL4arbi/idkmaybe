@@ -1,4 +1,8 @@
 // Boot, login, navigation.
+
+// Icons of the Hub's own pages in the collapsed menu (apps use their logo).
+const NAV_SYMBOLS = { home: '⌂', 'my-tickets': '✉', 'admin-users': '👤', 'admin-tickets': '☷' };
+
 const app = {
   session: null,
   current: null,
@@ -99,6 +103,16 @@ const app = {
       if (!$('user-dropdown').classList.contains('hidden')) setMenu(false);
     });
 
+    let collapsed = false;
+    try {
+      collapsed = localStorage.getItem('navCollapsed') === '1';
+    } catch {
+      // default: menu open
+    }
+    this.setNavCollapsed(collapsed);
+    $('nav-toggle').addEventListener('click', () => this.setNavCollapsed(!$('shell').classList.contains('nav-collapsed')));
+
+    // Also follows the menu being collapsed/expanded: the open app resizes with it.
     new ResizeObserver(() => this.sendBounds()).observe($('content'));
     window.hub.onLogoutRequest(() => this.logout());
     window.hub.onNotice((message) => toast(message, 'error'));
@@ -185,9 +199,25 @@ const app = {
   buildNav() {
     $('sidebar').replaceChildren(...this.pages().map((p) => (p.section
       ? el('div', { class: 'nav-section' }, p.section)
-      : el('button', { class: 'nav-item', 'data-page': p.id, onclick: () => this.go(p.id) },
-        p.appKey && el('img', { class: 'nav-icon', src: `../asset/apps/${p.appKey}.png`, alt: '' }),
-        p.label))));
+      : el('button', { class: 'nav-item', 'data-page': p.id, title: p.label, onclick: () => this.go(p.id) },
+        p.appKey
+          ? el('img', { class: 'nav-icon', src: `../asset/apps/${p.appKey}.png`, alt: '' })
+          : el('span', { class: 'nav-icon nav-letter' }, NAV_SYMBOLS[p.id] || p.label.slice(0, 1)),
+        el('span', { class: 'nav-label' }, p.label)))));
+  },
+
+  // Collapsed menu = a thin strip of icons, so an app gets almost the whole
+  // width; remembered on this PC.
+  setNavCollapsed(collapsed) {
+    $('shell').classList.toggle('nav-collapsed', collapsed);
+    $('nav-toggle').title = collapsed ? 'Afficher le menu' : 'Réduire le menu';
+    // Resize the open app right away (reading the layout is synchronous).
+    this.sendBounds();
+    try {
+      localStorage.setItem('navCollapsed', collapsed ? '1' : '0');
+    } catch {
+      // not remembered, still works
+    }
   },
 
   // The app currently on screen (null on Hub pages).

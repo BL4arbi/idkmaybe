@@ -1,8 +1,8 @@
-const { app, BrowserWindow, Menu, ipcMain, safeStorage, shell } = require('electron');
+const { app, BrowserWindow, Menu, dialog, ipcMain, safeStorage, shell } = require('electron');
 const path = require('node:path');
 const os = require('node:os');
 const fs = require('node:fs');
-const { autoUpdater } = require('electron-updater');
+const updater = require('./updater');
 const { AppManager } = require('./apps');
 const trackerHost = require('./apps/tracker-host');
 
@@ -201,16 +201,20 @@ function createWindow() {
   return win;
 }
 
-// ── Auto-update from GitHub Releases ─────────────────────
-function setupUpdater() {
-  if (!app.isPackaged) return;
-  autoUpdater.on('error', (err) => log('warn', `updater: ${err.message}`));
-  autoUpdater.on('update-downloaded', (info) => log('info', `update ${info.version} downloaded, installs on quit`));
-  autoUpdater.checkForUpdatesAndNotify().catch((err) => log('warn', `updater: ${err.message}`));
-  setInterval(() => autoUpdater.checkForUpdatesAndNotify().catch(() => {}), 4 * 60 * 60 * 1000);
-}
-
-if (!app.requestSingleInstanceLock()) {
+// Reopened while an update is being installed: say so and step aside
+// (checked before the single-instance lock, which the restarted Hub needs).
+if (updater.installInProgress()) {
+  app.whenReady().then(async () => {
+    await dialog.showMessageBox({
+      type: 'info',
+      title: 'Tacquet Hub',
+      message: 'Mise à jour en cours d’installation',
+      detail: 'Tacquet Hub va se rouvrir tout seul dans quelques secondes.',
+      buttons: ['OK'],
+    });
+    app.quit();
+  });
+} else if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
   app.on('second-instance', () => {
@@ -225,7 +229,7 @@ if (!app.requestSingleInstanceLock()) {
     Menu.setApplicationMenu(null);
     log('info', `Tacquet Hub ${app.getVersion()} started, server ${serverUrl}`);
     createWindow();
-    setupUpdater();
+    updater.setup({ getWindow: () => mainWindow, log });
   });
 
   app.on('window-all-closed', () => app.quit());

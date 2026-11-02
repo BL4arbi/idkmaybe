@@ -1,0 +1,14 @@
+/* Update progress window: Tacquet black/red, same tokens as the Hub's dark theme. */
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { font: 13px/1.5 system-ui, "Segoe UI", sans-serif; background: #16171d; color: #c9c8cf; user-select: none; display: flex; flex-direction: column; }
+.brand { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: #0b0b0d; border-bottom: 3px solid #e6435c; color: #fff; font-weight: 700; }
+.brand img { height: 26px; width: auto; border-radius: 3px; }
+main { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 0 20px 6px; }
+#status { margin: 0 0 10px; color: #f3f4f6; }
+#status.error { color: #ef6b5e; }
+.track { height: 10px; border-radius: 6px; background: #1d1e26; border: 1px solid #2e303a; overflow: hidden; }
+.fill { height: 100%; width: 0%; background: #e6435c; border-radius: 6px; transition: width .2s ease; }
+.fill.indeterminate { width: 40%; animation: slide 1.1s ease-in-out infinite; }
+@keyframes slide { 0% { margin-left: 0%; } 50% { margin-left: 60%; } 100% { margin-left: 0%; } }
+.pct { margin: 6px 0 0; text-align: right; font-size: 12px; color: #8f8e98; font-variant-numeric: tabular-nums; }

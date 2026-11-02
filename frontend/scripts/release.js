@@ -4,9 +4,9 @@
  * Usage : npm run update
  *
  * Donne les 3 fichiers à livrer sur https://github.com/BL4arbi/idkmaybe/releases :
- * l'installateur .exe, son .blockmap et latest.yml. Les Hubs installés voient
- * la nouvelle version au démarrage (ou dans les 4 heures) et s'installent à la
- * fermeture.
+ * l'installateur .exe, son .blockmap et latest.yml. Les Hubs installés le
+ * proposent au démarrage (ou dans les 4 heures) : « Mettre à jour » →
+ * pourcentage de téléchargement → installation → le Hub se rouvre.
  * Si la variable GH_TOKEN est définie (token GitHub, droit "Contents: write"),
  * la release est envoyée directement en brouillon.
  */

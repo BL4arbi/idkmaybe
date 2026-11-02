@@ -205,8 +205,10 @@ Avant `npm run update`, les apps doivent être à jour dans leurs dossiers :
 pour le Tracker, `npm run build` dans `C:\thomas_app\frontend` (le Hub prend
 son `dist/`).
 
-Les Hubs installés se mettent à jour au démarrage suivant ou dans les 4 heures,
-et s'installent à la fermeture du Hub.
+Sur les PC, comme pour QHSE : au démarrage (puis toutes les 4 heures), une fenêtre propose la nouvelle
+version : « Mettre à jour » affiche le pourcentage de téléchargement, installe
+et rouvre le Hub tout seul. « Plus tard » : la question revient au prochain démarrage.
+Rien ne s'installe sans que la personne ait cliqué « Mettre à jour ».
 
 Mise à jour de l'**API** (backend) : sur le serveur, récupérer le code, puis
 `docker build -t tacquet-hub-api backend`, `docker rm -f tacquet-hub-api` et

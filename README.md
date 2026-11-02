@@ -56,8 +56,9 @@ npm run build      # installateur dans frontend/release/
 npm run update     # version +1, construit, donne les 3 fichiers à livrer (voir HANDOFF.md)
 ```
 
-Les Hubs installés vérifient GitHub au démarrage puis toutes les 4 heures,
-téléchargent la nouvelle version en arrière-plan et l'installent à la fermeture.
+Mise à jour des Hubs installés (comme QHSE) : au démarrage (puis toutes les 4 heures), une fenêtre propose la nouvelle
+version : « Mettre à jour » affiche le pourcentage de téléchargement, installe
+et rouvre le Hub tout seul. « Plus tard » : la question revient au prochain démarrage.
 
 ## Comptes et accès
 
