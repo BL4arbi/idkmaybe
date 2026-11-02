@@ -28,32 +28,23 @@ Mises à jour livrées par **GitHub Releases** sur
 
 ## Installer l'API sur 192.168.0.134
 
-1. Créer la base (une seule fois) dans le conteneur Postgres existant :
+1. Copier le dossier `backend` sur le serveur (ou le zip `dist/tacquet-hub-server.zip`, sans `node_modules`).
+2. Sur le serveur, dans PowerShell **en administrateur**, depuis ce dossier :
 
-   ```bash
-   docker exec -it <conteneur-postgres> psql -U postgres -c "CREATE DATABASE tacquet_hub;"
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\install-server.ps1
    ```
 
-2. Copier `backend/.env.example` en `backend/.env` et remplir :
-   - `DATABASE_URL=postgres://postgres:<mot de passe>@192.168.0.134:5432/tacquet_hub`
-   - `JWT_SECRET` : longue chaîne aléatoire (commande dans le fichier)
-   - `ALLOWED_EMAIL_DOMAIN` : votre domaine, pour n'autoriser que les emails de l'entreprise
-   - SMTP (facultatif) : uniquement pour être prévenu des tickets. Les comptes et mots de passe n'utilisent jamais l'email.
+   Au premier lancement, il demande le mot de passe Postgres et le domaine email,
+   crée `.env`, construit l'image, lance le conteneur `tacquet-hub-api` (redémarrage
+   automatique), crée la base `tacquet_hub` si elle n'existe pas et ouvre le port 4100.
+   Pour une mise à jour : remplacer le dossier (garder `.env`) et relancer le même script.
 
-3. Construire et lancer (le schéma est appliqué automatiquement à chaque démarrage) :
-
-   ```bash
-   cd backend
-   docker build -t tacquet-hub-api .
-   docker run -d --name tacquet-hub-api --restart unless-stopped --env-file .env -p 4100:4100 -v tacquet-hub-uploads:/app/uploads tacquet-hub-api
-   ```
-
-4. Se connecter avec le compte **admin** (créé au premier démarrage, accès à toutes les apps).
+3. Se connecter avec le compte **admin** (créé au premier démarrage, accès à toutes les apps).
    C'est le seul administrateur : lui seul crée les comptes et choisit les accès et les rôles.
 
-5. Autoriser le port TCP 4100 entrant dans le pare-feu Windows de 192.168.0.134.
-
-Vérification : `http://192.168.0.134:4100/api/health` doit répondre `{"ok":true}`.
+Vérification depuis n'importe quel PC : `http://192.168.0.134:4100/api/health` doit répondre `{"ok":true}`.
+Journal du serveur : `docker logs tacquet-hub-api`.
 
 ## Application de bureau
 
