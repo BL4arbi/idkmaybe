@@ -3,11 +3,15 @@ const path = require('node:path');
 const os = require('node:os');
 const fs = require('node:fs');
 const { autoUpdater } = require('electron-updater');
+const { AppManager } = require('./apps');
+const trackerHost = require('./apps/tracker-host');
 
 // Where the Hub API runs. Can be overridden per PC (tests, server move)
 // with a config.json in the userData folder: { "serverUrl": "http://..." }
 const DEFAULT_SERVER_URL = 'http://192.168.0.134:4100';
 
+// Tests run with their own folder so they never touch the real Hub session.
+if (process.env.HUB_USER_DATA) app.setPath('userData', process.env.HUB_USER_DATA);
 const userData = app.getPath('userData');
 const sessionFile = path.join(userData, 'session.bin');
 const logFile = path.join(userData, 'hub-log.txt');
@@ -19,7 +23,13 @@ function readConfig() {
     return {};
   }
 }
-const serverUrl = (process.env.HUB_SERVER_URL || readConfig().serverUrl || DEFAULT_SERVER_URL).replace(/\/+$/, '');
+const config = readConfig();
+const serverUrl = (process.env.HUB_SERVER_URL || config.serverUrl || DEFAULT_SERVER_URL).replace(/\/+$/, '');
+// The Tracker's own server (same override mechanism: "trackerApiUrl").
+const trackerApiUrl = (process.env.HUB_TRACKER_URL || config.trackerApiUrl || trackerHost.DEFAULT_TRACKER_API).replace(/\/+$/, '');
+
+let mainWindow = null;
+let apps = null; // AppManager, created with the window
 
 // ── Diagnostics ──────────────────────────────────────────
 // The last warnings/errors are attached to tickets so a "it crashed" report
@@ -73,11 +83,56 @@ ipcMain.handle('hub:info', () => ({
   serverUrl,
 }));
 
+// Screenshot for a ticket: the app on screen if one is open, else the Hub page.
 ipcMain.handle('report:capture', async (event) => {
-  const win = BrowserWindow.fromWebContents(event.sender);
-  if (!win) return null;
-  const image = await win.webContents.capturePage();
-  return image.toDataURL();
+  const view = apps?.activeView();
+  const target = view ? view.webContents : event.sender;
+  try {
+    const image = await target.capturePage();
+    return image.toDataURL();
+  } catch (err) {
+    // e.g. window minimised: the ticket is still sent, just without an image.
+    log('warn', `screenshot: ${err.message}`);
+    return null;
+  }
+});
+
+// ── Apps inside the Hub ──────────────────────────────────
+// The renderer tells the main process who is logged in; apps only open for
+// an app present in that person's access list.
+ipcMain.handle('hub:set-identity', (_e, hub) => {
+  trackerSessions.reset();
+  apps.setIdentity(hub);
+});
+ipcMain.handle('hub:clear-identity', () => {
+  trackerSessions.reset();
+  apps.setIdentity(null);
+});
+ipcMain.handle('apps:open', (_e, key) => {
+  try {
+    apps.open(key);
+    return { ok: true };
+  } catch (err) {
+    return { error: err.message };
+  }
+});
+ipcMain.handle('apps:preload', () => apps.preload());
+ipcMain.handle('apps:show-hub', () => apps.showHub());
+ipcMain.on('apps:bounds', (_e, rect) => apps.setBounds(rect));
+ipcMain.on('apps:overlay', (_e, on) => apps.setOverlay(Boolean(on)));
+ipcMain.handle('apps:versions', () => {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'apps', 'manifest.json'), 'utf8'));
+  } catch {
+    return {};
+  }
+});
+
+const trackerSessions = trackerHost.setup({
+  getHub: () => apps?.hub,
+  trackerApi: trackerApiUrl,
+  notify: (message) => mainWindow?.webContents.send('hub:notice', message),
+  log,
 });
 
 ipcMain.handle('report:diagnostics', () => ({
@@ -124,8 +179,19 @@ function createWindow() {
     return { action: 'deny' };
   });
 
-  win.once('ready-to-show', () => win.show());
+  win.once('ready-to-show', () => {
+    win.maximize();
+    win.show();
+  });
   win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
+
+  mainWindow = win;
+  apps = new AppManager({
+    window: win,
+    log,
+    // "Déconnexion" inside an app (QHSE) logs out of the Hub.
+    onLogoutRequest: () => win.webContents.send('hub:logout-request'),
+  });
 
   if (!app.isPackaged) {
     win.webContents.on('before-input-event', (_e, input) => {

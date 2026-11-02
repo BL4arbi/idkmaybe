@@ -183,7 +183,15 @@ table.grid { border-collapse: collapse; width: 100%; }
 .form label.check { display: flex; font-weight: 500; }
 .shot-preview { max-width: 100%; max-height: 220px; border: 1px solid var(--border); border-radius: 6px; margin-top: 6px; }
 .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
-#toast-root { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 100; }
+/* Top centre, over the brand bar: never hidden behind an open app. */
+#toast-root { position: fixed; top: 8px; left: 50%; transform: translateX(-50%); align-items: center; display: flex; flex-direction: column; gap: 8px; z-index: 100; }
 .toast { background: var(--topbar-bg); color: #fff; padding: 10px 14px; border-radius: 8px; max-width: 380px; box-shadow: var(--shadow); }
 .toast.success { background: var(--success); }
 .toast.error { background: var(--danger); }
+
+/* Apps inside the Hub: the app view covers the whole content area. */
+.content.app-host { padding: 0; overflow: hidden; }
+.app-loading { display: flex; align-items: center; justify-content: center; height: 100%; }
+.nav-item { display: flex; align-items: center; gap: 8px; }
+.nav-icon { width: 18px; height: 18px; border-radius: 4px; object-fit: contain; background: var(--topbar-bg); }
+.row-actions { display: flex; gap: 6px; white-space: nowrap; }

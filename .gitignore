@@ -13,3 +13,6 @@ backend/uploads/*
 **/db-config.js
 *.pem
 *.key
+
+# Apps copied in at build time (contains QHSE database credentials).
+frontend/apps/

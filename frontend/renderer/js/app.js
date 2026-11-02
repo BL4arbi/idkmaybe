@@ -85,12 +85,23 @@ const app = {
   },
 
   bindShell() {
-    $('report-btn').addEventListener('click', () => report.open(this.session));
+    $('report-btn').addEventListener('click', () => report.open(this.session, this.activeAppKey()));
+    // The user menu drops over the content area: hide the app view meanwhile.
+    const setMenu = (open) => {
+      show($('user-dropdown'), open);
+      updateOverlay();
+    };
     $('user-btn').addEventListener('click', (e) => {
       e.stopPropagation();
-      $('user-dropdown').classList.toggle('hidden');
+      setMenu($('user-dropdown').classList.contains('hidden'));
     });
-    document.addEventListener('click', () => show($('user-dropdown'), false));
+    document.addEventListener('click', () => {
+      if (!$('user-dropdown').classList.contains('hidden')) setMenu(false);
+    });
+
+    new ResizeObserver(() => this.sendBounds()).observe($('content'));
+    window.hub.onLogoutRequest(() => this.logout());
+    window.hub.onNotice((message) => toast(message, 'error'));
     $('menu-logout').addEventListener('click', () => this.logout());
     $('menu-password').addEventListener('click', () => this.changePasswordModal());
   },
@@ -114,6 +125,17 @@ const app = {
     $('user-btn').textContent = session.user.full_name;
     this.buildNav();
     this.go('home');
+
+    // The main process opens the apps for this person only, with their role.
+    await window.hub.setIdentity({
+      token: session.token,
+      user: session.user,
+      apps: session.apps.map((a) => ({ key: a.key, role: a.role })),
+    });
+    // Start the apps in the background so the first click is instant too.
+    setTimeout(() => {
+      if (this.session === session) window.hub.preloadApps();
+    }, 1500);
   },
 
   async saveSession() {
@@ -127,6 +149,9 @@ const app = {
   async logout(message) {
     api.token = null;
     this.session = null;
+    this.current = null;
+    closeAllModals();
+    await window.hub.clearIdentity();
     // Keep the identifier pre-filled for next time, but not the session.
     const saved = await window.hub.getSession();
     if (saved?.identifier && this.remember) await window.hub.setSession({ identifier: saved.identifier });
@@ -137,9 +162,16 @@ const app = {
 
   pages() {
     const pages = [
-      { id: 'home', label: 'Mes applications', render: (c) => appsView.render(c, this.session) },
-      { id: 'my-tickets', label: 'Mes tickets', render: (c) => ticketsView.render(c, this.session, 'mine') },
+      { id: 'home', label: 'Accueil', render: (c) => appsView.render(c, this.session) },
     ];
+    if (this.session.apps.length) {
+      pages.push({ section: 'Applications' });
+      for (const a of this.session.apps) pages.push({ id: `app:${a.key}`, label: a.name, appKey: a.key });
+    }
+    pages.push(
+      { section: 'Support' },
+      { id: 'my-tickets', label: 'Mes tickets', render: (c) => ticketsView.render(c, this.session, 'mine') },
+    );
     if (this.session.user.is_admin) {
       pages.push(
         { section: 'Administration' },
@@ -153,7 +185,14 @@ const app = {
   buildNav() {
     $('sidebar').replaceChildren(...this.pages().map((p) => (p.section
       ? el('div', { class: 'nav-section' }, p.section)
-      : el('button', { class: 'nav-item', 'data-page': p.id, onclick: () => this.go(p.id) }, p.label))));
+      : el('button', { class: 'nav-item', 'data-page': p.id, onclick: () => this.go(p.id) },
+        p.appKey && el('img', { class: 'nav-icon', src: `../asset/apps/${p.appKey}.png`, alt: '' }),
+        p.label))));
+  },
+
+  // The app currently on screen (null on Hub pages).
+  activeAppKey() {
+    return this.current?.startsWith('app:') ? this.current.slice(4) : null;
   },
 
   async go(id) {
@@ -162,6 +201,18 @@ const app = {
     this.current = id;
     for (const b of document.querySelectorAll('.nav-item')) b.classList.toggle('active', b.dataset.page === id);
     const content = $('content');
+    content.classList.toggle('app-host', Boolean(page.appKey));
+
+    // Apps are drawn by the main process over the content area; switching
+    // only shows/hides them, nothing is reloaded.
+    if (page.appKey) {
+      content.replaceChildren(el('div', { class: 'app-loading muted' }, `Ouverture de ${page.label}…`));
+      this.sendBounds();
+      const res = await window.hub.openApp(page.appKey);
+      if (res.error) content.replaceChildren(el('p', { class: 'error' }, res.error));
+      return;
+    }
+    await window.hub.showHub();
     content.replaceChildren();
     try {
       await page.render(content);
@@ -172,6 +223,12 @@ const app = {
 
   refreshIfOn(id) {
     if (this.current === id) this.go(id);
+  },
+
+  // Where the app views go: exactly over the content area.
+  sendBounds() {
+    const r = $('content').getBoundingClientRect();
+    window.hub.setAppBounds({ x: r.left, y: r.top, width: r.width, height: r.height });
   },
 
   changePasswordModal() {

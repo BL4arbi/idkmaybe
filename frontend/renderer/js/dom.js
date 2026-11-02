@@ -33,11 +33,25 @@ function toast(message, kind = 'info') {
 }
 
 // Opens a modal; returns a close() function.
+// An open app is drawn above the Hub page, so while a Hub dialog or menu is
+// open the app view is hidden (the main process keeps it alive).
+function updateOverlay() {
+  const open = $('modal-root').children.length > 0 || !$('user-dropdown').classList.contains('hidden');
+  window.hub.setOverlay(open);
+}
+
+function closeAllModals() {
+  $('modal-root').replaceChildren();
+  show($('user-dropdown'), false);
+  updateOverlay();
+}
+
 function openModal(title, body, { wide = false } = {}) {
   const root = $('modal-root');
   const close = () => {
     overlay.remove();
     document.removeEventListener('keydown', onKey);
+    updateOverlay();
   };
   const onKey = (e) => {
     if (e.key === 'Escape') close();
@@ -48,6 +62,7 @@ function openModal(title, body, { wide = false } = {}) {
       body));
   root.append(overlay);
   document.addEventListener('keydown', onKey);
+  updateOverlay();
   return close;
 }
 

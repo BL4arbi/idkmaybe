@@ -30,7 +30,41 @@ const adminUsersView = {
         onchange: (e) => patchUser(u, { active: e.target.checked }, e.target),
       })),
       el('td', { class: 'muted small' }, formatDate(u.last_login_at)),
-      el('td', {}, el('button', { class: 'btn small', onclick: () => resetPassword(u) }, 'Réinit. mot de passe')));
+      el('td', { class: 'row-actions' },
+        el('button', { class: 'btn small', onclick: () => editUser(u) }, 'Modifier'),
+        el('button', { class: 'btn small', onclick: () => resetPassword(u) }, 'Réinit. mot de passe')));
+
+    // Name and company email. The email links the account to the same
+    // person's account in the Tracker and QHSE.
+    const editUser = (u) => {
+      const name = el('input', { type: 'text', required: true, value: u.full_name });
+      const email = el('input', { type: 'email', value: u.company_email || '' });
+      const error = el('p', { class: 'error' });
+      const form = el('form', { class: 'form' },
+        el('label', {}, 'Nom complet'), name,
+        el('label', {}, 'Email professionnel'), email,
+        el('p', { class: 'muted small' }, u.username === u.company_email || !u.company_email
+          ? 'Sert d’identifiant de connexion et relie ce compte à son compte Tracker et QHSE (même email).'
+          : `L’identifiant de connexion reste « ${u.username} ». L’email relie ce compte à son compte Tracker et QHSE.`),
+        error,
+        el('div', { class: 'actions' }, el('button', { type: 'submit', class: 'btn primary' }, 'Enregistrer')));
+      const close = openModal(`Modifier ${u.full_name}`, form);
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const changes = { full_name: name.value };
+        if (email.value.trim() && email.value.trim().toLowerCase() !== (u.company_email || '')) changes.company_email = email.value;
+        try {
+          Object.assign(u, await api.patch(`/api/admin/users/${u.id}`, changes));
+          close();
+          draw();
+          toast('Compte mis à jour', 'success');
+          // Own account: the apps use the new email from the next login.
+          if (u.id === session.user.id) toast('Reconnectez-vous pour que les applications utilisent ce nouvel email.');
+        } catch (err) {
+          error.textContent = err.message;
+        }
+      });
+    };
 
     const setAccess = async (u, a, select) => {
       const role = select.value || null;

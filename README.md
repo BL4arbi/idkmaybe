@@ -22,7 +22,7 @@ Mises à jour livrées par **GitHub Releases** sur
 ## Avancement
 
 - [x] Étape 1 : connexion, page d'administration (comptes + accès par app), tickets, thème jour/sombre
-- [ ] Étape 2 : ouvrir Tacquet Measure, le Tracker et QHSE dans le Hub (connexion unique, bascule instantanée)
+- [x] Étape 2 : Tacquet Measure, le Tracker et QHSE s'ouvrent dans le Hub (connexion unique, bascule instantanée, rôles du Hub)
 - [ ] Étape 3 : retirer les trois installateurs séparés
 - [ ] Phase 2 : faire passer l'accès base de QHSE par l'API (son installateur contient aujourd'hui le mot de passe MariaDB)
 
@@ -53,7 +53,7 @@ cd frontend
 npm install
 npm start          # lancement en développement (F12 = outils de développement)
 npm run build      # installateur dans frontend/release/
-npm run release    # version +1, construit et publie sur GitHub (voir HANDOFF.md)
+npm run update     # version +1, construit, donne les 3 fichiers à livrer (voir HANDOFF.md)
 ```
 
 Les Hubs installés vérifient GitHub au démarrage puis toutes les 4 heures,

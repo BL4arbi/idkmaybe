@@ -82,13 +82,30 @@ router.patch('/users/:id', wrap(async (req, res) => {
   if (id === req.user.id && active === false) {
     return res.status(400).json({ error: 'Vous ne pouvez pas désactiver votre propre compte' });
   }
+  // The company email links a Hub account to the same person's account in
+  // each app (Tracker, QHSE). For people who sign in with their email, the
+  // login follows the email; the "admin" login stays "admin".
+  let email = null;
+  if (req.body?.company_email !== undefined) {
+    email = String(req.body.company_email || '').toLowerCase().trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return res.status(400).json({ error: 'Email invalide' });
+    if (!isAllowedDomain(email)) {
+      return res.status(400).json({ error: `Seules les adresses @${process.env.ALLOWED_EMAIL_DOMAIN} sont autorisées` });
+    }
+    const taken = await pool.query(
+      'SELECT id FROM users WHERE (username = $1 OR company_email = $1) AND id <> $2', [email, id]
+    );
+    if (taken.rows.length) return res.status(409).json({ error: 'Cet email est déjà utilisé par un autre compte' });
+  }
   const { rows } = await pool.query(
     `UPDATE users SET
-       full_name = COALESCE($2, full_name),
-       active    = COALESCE($3, active)
+       full_name     = COALESCE($2, full_name),
+       active        = COALESCE($3, active),
+       username      = CASE WHEN $4::text IS NOT NULL AND username = company_email THEN $4 ELSE username END,
+       company_email = COALESCE($4, company_email)
      WHERE id = $1
      RETURNING ${USER_FIELDS}`,
-    [id, full_name?.trim() || null, typeof active === 'boolean' ? active : null]
+    [id, full_name?.trim() || null, typeof active === 'boolean' ? active : null, email]
   );
   if (!rows[0]) return res.status(404).json({ error: 'Utilisateur introuvable' });
   res.json(rows[0]);

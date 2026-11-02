@@ -6,12 +6,16 @@
   "author": "Tacquet Industries",
   "main": "electron/main.js",
   "scripts": {
-    "start": "electron .",
-    "build": "electron-builder --publish=never",
+    "start": "node scripts/sync-apps.js && electron .",
+    "sync-apps": "node scripts/sync-apps.js",
+    "build": "node scripts/sync-apps.js && electron-builder --publish=never",
+    "update": "node scripts/release.js",
     "release": "node scripts/release.js"
   },
   "dependencies": {
-    "electron-updater": "^6.3.9"
+    "electron-updater": "^6.3.9",
+    "exceljs": "^4.4.0",
+    "mysql2": "3.22.5"
   },
   "devDependencies": {
     "electron": "^43.2.0",
@@ -25,7 +29,11 @@
     "files": [
       "electron/**/*",
       "renderer/**/*",
-      "asset/**/*"
+      "asset/**/*",
+      "apps/**/*"
+    ],
+    "asarUnpack": [
+      "apps/tracker/electron/*.vbs"
     ],
     "directories": {
       "output": "release"

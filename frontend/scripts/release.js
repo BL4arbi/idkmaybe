@@ -1,12 +1,14 @@
 /**
- * Incrémente la version patch (0.1.0 → 0.1.1), construit l'installateur et
- * le publie sur GitHub Releases (BL4arbi/idkmaybe). Les Hubs installés le
- * téléchargent tout seuls.
+ * Nouvelle version du Hub : version +1, copie des apps à jour, installateur.
  *
- * Usage : npm run release
- * Publication automatique si la variable GH_TOKEN est définie
- * (token GitHub avec le droit "Contents: write" sur le dépôt) ;
- * sinon l'installateur est seulement construit, à téléverser à la main.
+ * Usage : npm run update
+ *
+ * Donne les 3 fichiers à livrer sur https://github.com/BL4arbi/idkmaybe/releases :
+ * l'installateur .exe, son .blockmap et latest.yml. Les Hubs installés voient
+ * la nouvelle version au démarrage (ou dans les 4 heures) et s'installent à la
+ * fermeture.
+ * Si la variable GH_TOKEN est définie (token GitHub, droit "Contents: write"),
+ * la release est envoyée directement en brouillon.
  */
 const fs = require('fs');
 const path = require('path');
@@ -22,18 +24,27 @@ pkg.version = newVersion;
 fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
 console.log(`\n Version : ${major}.${minor}.${patch} → ${newVersion}\n`);
 
+console.log(' Copie des applications…');
+execSync('node scripts/sync-apps.js', { stdio: 'inherit', cwd: root });
+
+console.log('\n Construction de l’installateur…\n');
 const publish = process.env.GH_TOKEN ? 'always' : 'never';
 execSync(`npx electron-builder --publish ${publish}`, { stdio: 'inherit', cwd: root });
 
+const dir = path.join(root, 'release');
 const exe = `Tacquet-Hub-Setup-${newVersion}.exe`;
-if (publish === 'always') {
-  console.log(`\n Publié sur GitHub (brouillon de release v${newVersion}).`);
-  console.log(' → Va sur https://github.com/BL4arbi/idkmaybe/releases et clique "Publish release".');
-  console.log('   Les Hubs installés se mettront à jour dans les 4 heures (ou au prochain démarrage).\n');
-} else {
-  console.log(`\n Construit : frontend\\release\\${exe}  (GH_TOKEN absent, rien n'a été publié)`);
-  console.log(' → https://github.com/BL4arbi/idkmaybe/releases > New release');
-  console.log(` → Tag : v${newVersion}`);
-  console.log(` → Téléverse les 3 fichiers : ${exe}, ${exe}.blockmap, latest.yml\n`);
+const files = [exe, `${exe}.blockmap`, 'latest.yml'];
+for (const f of files) {
+  if (!fs.existsSync(path.join(dir, f))) throw new Error(`Fichier manquant : ${path.join(dir, f)}`);
 }
-console.log(' N’oublie pas de committer le changement de version : git commit -am "v' + newVersion + '"\n');
+
+console.log(`\n Terminé — Tacquet Hub ${newVersion}`);
+if (publish === 'always') {
+  console.log(' Envoyé sur GitHub en brouillon : https://github.com/BL4arbi/idkmaybe/releases → "Publish release".');
+} else {
+  console.log(' → https://github.com/BL4arbi/idkmaybe/releases/new');
+  console.log(` → Tag : v${newVersion}`);
+  console.log(' → Téléverse ces 3 fichiers, puis "Publish release" :');
+  for (const f of files) console.log(`     ${path.join(dir, f)}`);
+}
+console.log(`\n Puis : git commit -am "chore: v${newVersion}"\n`);
