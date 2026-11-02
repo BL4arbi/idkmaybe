@@ -1,0 +1,63 @@
+{
+  "name": "tacquet-hub",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tacquet Hub - toutes les applications Tacquet Industries",
+  "author": "Tacquet Industries",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --publish=never",
+    "release": "node scripts/release.js"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.9"
+  },
+  "devDependencies": {
+    "electron": "^43.2.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.tacquet.hub",
+    "productName": "Tacquet Hub",
+    "copyright": "Tacquet Industries",
+    "artifactName": "Tacquet-Hub-Setup-${version}.${ext}",
+    "files": [
+      "electron/**/*",
+      "renderer/**/*",
+      "asset/**/*"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "asset/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "installerIcon": "asset/icon.ico",
+      "uninstallerIcon": "asset/icon.ico",
+      "installerHeader": "asset/installer-header.bmp",
+      "installerSidebar": "asset/installer-sidebar.bmp",
+      "uninstallerSidebar": "asset/installer-sidebar.bmp"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "BL4arbi",
+        "repo": "idkmaybe"
+      }
+    ]
+  }
+}

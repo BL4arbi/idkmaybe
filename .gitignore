@@ -1,0 +1,15 @@
+node_modules/
+dist/
+release/
+.env
+*.log
+
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Never commit secrets: the GitHub repo is public.
+.env.*
+!.env.example
+**/db-config.js
+*.pem
+*.key

@@ -1,0 +1,33 @@
+# Local test only: a throwaway Postgres + the Hub API on this PC.
+# Touches nothing on 192.168.0.134.
+#   docker compose -f docker-compose.local.yml up -d --build
+#   docker compose -f docker-compose.local.yml down      (stop; add -v to also wipe the test data)
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_PASSWORD: localtest
+      POSTGRES_DB: tacquet_hub
+    volumes:
+      - hub-local-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      retries: 30
+
+  api:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://postgres:localtest@db:5432/tacquet_hub
+      JWT_SECRET: local-test-only-not-for-production
+    ports:
+      - "4100:4100"
+    volumes:
+      - hub-local-uploads:/app/uploads
+
+volumes:
+  hub-local-db:
+  hub-local-uploads:

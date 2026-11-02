@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src http: https:" />
+  <title>Tacquet Hub</title>
+  <!-- Before the stylesheet's first paint, so there is no light flash in dark mode. -->
+  <script src="js/theme.js"></script>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- Login / forced password change -->
+  <div id="auth-screen" class="auth hidden">
+    <div class="auth-card">
+      <div class="auth-brand"><img src="../asset/logo.png" alt="Tacquet Industries" /></div>
+      <h1>Tacquet Hub</h1>
+
+      <form id="login-form">
+        <label for="login-identifier">Identifiant ou email professionnel</label>
+        <input id="login-identifier" type="text" autocomplete="username" required />
+        <label for="login-password">Mot de passe</label>
+        <input id="login-password" type="password" autocomplete="current-password" required />
+        <label class="check"><input id="login-remember" type="checkbox" checked /> Se souvenir de moi</label>
+        <p class="error" id="login-error"></p>
+        <button type="submit" class="btn primary block">Se connecter</button>
+        <p class="muted small center hint">Mot de passe oublié ? Demandez à l’administrateur un mot de passe temporaire.</p>
+      </form>
+
+      <form id="change-form" class="hidden">
+        <p class="muted">Votre mot de passe est temporaire. Choisissez votre mot de passe personnel pour continuer.</p>
+        <label for="change-current">Mot de passe temporaire</label>
+        <input id="change-current" type="password" autocomplete="current-password" required />
+        <label for="change-new">Nouveau mot de passe (6 caractères min.)</label>
+        <input id="change-new" type="password" autocomplete="new-password" minlength="6" required />
+        <label for="change-confirm">Confirmer</label>
+        <input id="change-confirm" type="password" autocomplete="new-password" minlength="6" required />
+        <p class="error" id="change-error"></p>
+        <button type="submit" class="btn primary block">Valider</button>
+        <button type="button" class="link" id="change-cancel">Se déconnecter</button>
+      </form>
+
+      <div class="auth-foot">
+        <button type="button" class="link theme-toggle"></button>
+        <p class="server-line" id="server-line"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main shell -->
+  <div id="shell" class="shell hidden">
+    <header class="topbar">
+      <div class="brand"><img src="../asset/logo.png" alt="Tacquet Industries" /> Tacquet Hub</div>
+      <div class="topbar-right">
+        <button class="btn report" id="report-btn">Signaler un problème</button>
+        <button type="button" class="topbar-link theme-toggle"></button>
+        <div class="user-menu">
+          <button class="topbar-link" id="user-btn"></button>
+          <div class="dropdown hidden" id="user-dropdown">
+            <button id="menu-password">Changer mon mot de passe</button>
+            <button id="menu-logout">Se déconnecter</button>
+          </div>
+        </div>
+      </div>
+    </header>
+    <nav class="sidebar" id="sidebar"></nav>
+    <main class="content" id="content"></main>
+  </div>
+
+  <div id="modal-root"></div>
+  <div id="toast-root"></div>
+
+  <script src="js/dom.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/apps.js"></script>
+  <script src="js/report.js"></script>
+  <script src="js/tickets.js"></script>
+  <script src="js/admin-users.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
